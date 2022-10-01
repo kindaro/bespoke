@@ -3,9 +3,7 @@ name: learning-from-givens
 version: 0.1.0.0
 author: kindaro@gmail.com
 maintainer: Ignat Insarov
-license: NONE
-extra-doc-files: CHANGELOG.md
-build-type: Simple
+license: GPL-3.0-only
 
 common commons
   default-language: Haskell2010
@@ -16,10 +14,10 @@ library
   import: commons
   hs-source-dirs: library
   exposed-modules: MyLib
-  build-depends: base ^>=4.16.3.0
+  build-depends: base
 
 executable learning-from-givens
   import: commons
   hs-source-dirs: executables/learning-from-givens
   main-is: Main.hs
-  build-depends: base ^>=4.16.3.0, learning-from-givens
+  build-depends: base, learning-from-givens
