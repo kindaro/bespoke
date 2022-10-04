@@ -1,0 +1,6 @@
+- ignore: {name: "Use <$>"}
+- ignore: {name: "Redundant lambda"}
+- ignore: {name: "Avoid lambda"}
+- ignore: {name: "Avoid lambda using `infix`"}
+- ignore: {name: "Use const"}
+- warn: {name: Redundant bracket due to operator fixities}

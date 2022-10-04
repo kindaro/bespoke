@@ -6,18 +6,32 @@ maintainer: Ignat Insarov
 license: GPL-3.0-only
 
 common commons
-  default-language: Haskell2010
-  default-extensions: UnicodeSyntax
-  ghc-options: -Wall
+  build-depends:
+    , base
+    , base-unicode-symbols
+    , bytestring
+    , cassava
+    , fancy
+    , text >= 2
+    , vector
+    , pretty-show
+    , unordered-containers
+    , witherable
+    , hashable
+    , containers
+    , regex-tdfa
+
+  default-language: GHC2021
+  default-extensions: BlockArguments OverloadedStrings ScopedTypeVariables UnicodeSyntax NoImplicitPrelude OverloadedStrings
+  ghc-options: -Wall -Wextra -Wno-star-is-type
 
 library
   import: commons
   hs-source-dirs: library
   exposed-modules: MyLib
-  build-depends: base
 
 executable learning-from-givens
   import: commons
   hs-source-dirs: executables/learning-from-givens
   main-is: Main.hs
-  build-depends: base, learning-from-givens
+  build-depends: learning-from-givens
