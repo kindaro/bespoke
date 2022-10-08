@@ -22,7 +22,7 @@ common commons
     , regex-tdfa
 
   default-language: GHC2021
-  default-extensions: BlockArguments OverloadedStrings ScopedTypeVariables UnicodeSyntax NoImplicitPrelude OverloadedStrings
+  default-extensions: BlockArguments OverloadedStrings ScopedTypeVariables UnicodeSyntax NoImplicitPrelude OverloadedStrings FunctionalDependencies TypeFamilies TypeFamilyDependencies DataKinds
   ghc-options: -Wall -Wextra -Wno-star-is-type
 
 library

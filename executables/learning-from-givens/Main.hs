@@ -29,6 +29,9 @@ import Witherable qualified
 import Data.Set qualified as Set
 import Data.Ratio
 import Text.Regex.TDFA
+import Data.Set (Set)
+import Control.Monad
+import Data.Kind
 
 average ∷ Vector Float → Float
 average = uncurry (/) ∘ (Vector.sum ▵ fromIntegral ∘ Vector.length)
@@ -58,9 +61,9 @@ main = do
   let columns = transpose rows
   pPrint headline
   pPrint do fmap typify columns
-  let (intVectors, (floatVectors, (textVectors, ( )))) = cast columns
+  let (intVectors, (floatVectors, (listVectors, (textVectors, ( ))))) = cast columns
   let numbers = HashMap.union ((fmap ∘ fmap) fromIntegral intVectors) floatVectors
-  pPrint do for numbers (showNumber ∘ average ▵ showNumber ∘ deviation)
+  pPrint do for numbers (showFloat ∘ average ▵ showFloat ∘ deviation)
   pPrint do
     partitionEithers do
       for textVectors \ textVector →
@@ -70,7 +73,7 @@ main = do
         in if size ≡ 1
            then Left (Vector.head textVector)
            else Right let uniquity = fromIntegral size / (fromIntegral numberOfSamples ∷ Float) in do
-            ( size % numberOfSamples, (showNumber uniquity, if uniquity ≤ 0.1 ∧ size ≤ constantMaximumNumberOfCategories then elements else mempty))
+            ( size % numberOfSamples, (showFloat uniquity, if uniquity ≤ 0.1 ∧ size ≤ constantMaximumNumberOfCategories then elements else mempty))
 
 constantMaximumNumberOfCategories :: Int
 constantMaximumNumberOfCategories = 64
@@ -92,7 +95,7 @@ transposeHashMap hashMap =
 class Transpose outer inner where transpose ∷ outer (inner α) → inner (outer α)
 
 instance
-  (Functor outer, Foldable outer
+  ( Functor outer, Foldable outer
   , Filterable outer
   , Hashable key
   ) ⇒ Transpose outer (HashMap key)
@@ -117,9 +120,6 @@ decorateVectorLexicographically vector =
     render = Text.pack ∘ printf ("%" ⊕ Prelude.show orderOfMagnitude <> "d")
   in Vector.zipWith (⊕) (fmap render (Vector.enumFromTo 1 lengthOfVector)) vector
 
-showNumber ∷ Float → Text
-showNumber = Text.pack ∘ printf "%.4f"
-
 data TypeOfColumn = TextColumn | NumberColumn deriving (Eq, Ord, Show)
 
 typifyAs ∷ ∀ (this ∷ ★). Read this => Vector Text → Float
@@ -134,9 +134,52 @@ typifyAsNoting values = nameOfType @this :× typifyAs @this values
 typify ∷ Vector Text → [(Text, Float)]
 typify = List.sortOn (Down ∘ snd) ∘ tupleToList ∘ fork (typifyAsNoting @Int) (typifyAsNoting @Float) (const ("Text" ∷ Text, 1.0 ∷ Float))
 
-cast ∷ HashMap ByteArray (Vector Text) → HashMap ByteArray (Vector Int) × HashMap ByteArray (Vector Float) × HashMap ByteArray (Vector Text) × ( )
-cast = fork parseInt parseFloat parseText ∘ fmap (fork id typify)
-  where
-    parseInt = fmap (Witherable.mapMaybe (read @Int) ∘ fst) ∘ Witherable.filter (\ (_, typeOfVector) → (fst ∘ head ∘ fst) typeOfVector ≡ "Int")
-    parseFloat = fmap (Witherable.mapMaybe (read @Float) ∘ fst) ∘ Witherable.filter (\ (_, typeOfVector) → (fst ∘ head ∘ fst) typeOfVector ≡ "Float")
-    parseText = fmap fst ∘ Witherable.filter (\ (_, typeOfVector) → (fst ∘ head ∘ fst) typeOfVector ≡ "Text")
+parseCommaSeparatedWords ∷ Text → Maybe [Text]
+parseCommaSeparatedWords input =
+  let attempt = (fmap Text.strip ∘ Text.split (≡ ',')) input
+  in guarded (attempt ≡ (pure ∘ Text.strip) input) attempt
+
+parseReadings ∷ ∀ readly. (Read readly, Ord readly) ⇒ Text → Maybe (Set readly)
+parseReadings = fmap Set.fromList ∘ bind (traverse (read @readly)) ∘ parseCommaSeparatedWords
+
+attemptToParse ∷ Text
+  → Maybe Int
+  × Maybe Float
+  × Maybe (Set Int)
+  × Maybe (Set Float)
+  × Maybe (Set Text)
+  × Maybe Text
+  × ( )
+attemptToParse = fork
+  do read @Int
+  do read @Float
+  do parseReadings @Int
+  do parseReadings @Float
+  do fmap Set.fromList ∘ parseCommaSeparatedWords
+  do Just
+
+float ∷ Int → Float
+float = fromIntegral
+
+-- | Show with up to 4 digits of precision.
+showFloat ∷ Float → Text
+showFloat = Text.pack ∘ printf "%.4f"
+
+-- | Share of values that are not `Nothing`.
+definedness ∷ Vector (Maybe stuff) → Float
+definedness vector = (float ∘ length ∘ Vector.catMaybes) vector / (float ∘ length) vector
+
+-- | Share of unique values.
+ubiquity ∷ Ord stuff ⇒ Vector stuff → Float
+ubiquity vector = (float ∘ length ∘ Set.fromList ∘ Vector.toList) vector / (float ∘ length) vector
+
+f ∷ Vector Text -> [Float]
+f = tupleToList ∘ shrivel (Shrivelling  (definedness ∘ w)) ∘ weld ∘ transposeTuple ∘ fmap @Vector attemptToParse
+
+cast ∷ HashMap ByteArray (Vector Text)
+  → HashMap ByteArray (Vector Int)
+  × HashMap ByteArray (Vector Float)
+  × HashMap ByteArray (Vector [Text])
+  × HashMap ByteArray (Vector Text)
+  × ( )
+cast = undefined
